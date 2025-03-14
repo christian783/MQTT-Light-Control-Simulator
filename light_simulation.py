@@ -6,7 +6,7 @@ BROKER = "broker.hivemq.com"
 PORT = 1883
 TOPIC = "/student_group/light_control"
 
-def on_connect(client, userdata, flags, rc, properties):
+def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
         print("Connected to MQTT Broker!")
         client.subscribe(TOPIC)
