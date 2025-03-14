@@ -103,44 +103,72 @@
     <div id="status">Last action: Chillin'...</div>
 
     <script>
-        const client = mqtt.connect('wss://test.mosquitto.org:8081', {
-            protocolVersion: 5,
-            clientId: 'web-client-' + Math.random().toString(16).substr(2, 8)
+        // MQTT Configuration
+        const MQTT_CONFIG = {
+            broker: 'wss://test.mosquitto.org:8081',
+            topic: '/student_group/light_control',
+            qos: 1 // Ensure message delivery
+        };
+
+        // Initialize MQTT Client
+        const client = mqtt.connect(MQTT_CONFIG.broker, {
+            clientId: 'web-client-' + Math.random().toString(36).substr(2, 9),
+            clean: true,
+            connectTimeout: 4000,
+            reconnectPeriod: 1000
         });
 
-        const topic = '/student_group/light_control';
         const statusEl = document.getElementById('status');
 
-        // Button handlers with style
+        // Enhanced publish function
+        function publishLightState(state) {
+            if (!['ON', 'OFF'].includes(state)) return;
+            
+            client.publish(MQTT_CONFIG.topic, state, {
+                qos: MQTT_CONFIG.qos,
+                retain: false
+            });
+            
+            // Visual feedback
+            statusEl.textContent = state === 'ON' 
+                ? 'Last action: Lit it up! 🔥' 
+                : 'Last action: Lights out! 🌙';
+            statusEl.style.color = state === 'ON' 
+                ? 'var(--primary)' 
+                : '#ff6666';
+        }
+
+        // Button handlers
         document.getElementById('onBtn').addEventListener('click', () => {
-            client.publish(topic, 'ON');
-            statusEl.textContent = 'Last action: Lit it up! 🔥';
-            statusEl.style.color = 'var(--primary)';
+            publishLightState('ON');
         });
 
         document.getElementById('offBtn').addEventListener('click', () => {
-            client.publish(topic, 'OFF');
-            statusEl.textContent = 'Last action: Lights out! 🌙';
-            statusEl.style.color = '#ff6666';
+            publishLightState('OFF');
         });
 
-        // Connection status
+        // Connection management
         client.on('connect', () => {
-            console.log('Connected to MQTT broker');
             statusEl.textContent = 'Connected! Ready to roll! 🚀';
             statusEl.style.color = 'var(--primary)';
         });
 
         client.on('error', (err) => {
-            console.error('Connection error:', err);
-            statusEl.textContent = 'Oops! Connection failed! 😵';
+            console.error('MQTT Error:', err);
+            statusEl.textContent = 'Connection error! 🔌';
             statusEl.style.color = '#ff4444';
         });
 
-        client.on('offline', () => {
-            statusEl.textContent = 'Connection lost! 😢';
+        client.on('reconnect', () => {
+            statusEl.textContent = 'Reconnecting... ⚡';
             statusEl.style.color = '#ffa500';
+        });
+
+        // Prevent default context menu
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
         });
     </script>
 </body>
+
 </html>
